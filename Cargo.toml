@@ -1,0 +1,7 @@
+[package]
+name = "evercraft"
+version = "0.1.0"
+authors = ["Eric Dattore <edattore@gmail.com>"]
+
+[dependencies]
+rand = "0.3.15"
