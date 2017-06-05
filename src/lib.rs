@@ -35,6 +35,7 @@ impl Character {
     pub fn attack(&self, attackee: &Character, dice_roll: u32) -> AttackCommand {
         AttackCommand {
             dice_roll,
+            level_modifier: (self.level() / 2) as DiceRollModifier,
             strength_modifier: Self::modifier_score(self.strength),
             dexterity_modifier: Self::modifier_score(attackee.dexterity),
             constitution_modifier: Self::modifier_score(attackee.constitution),
@@ -91,12 +92,15 @@ pub fn resolve_combat(command: &AttackCommand, attacker: &mut Character, attacke
     attacker.experience_points += command.experience_points();
 }
 
+type DiceRollModifier = i32;
+
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct AttackCommand {
     dice_roll: u32,
-    strength_modifier: i32,
-    dexterity_modifier: i32,
-    constitution_modifier: i32,
+    strength_modifier: DiceRollModifier,
+    level_modifier: DiceRollModifier,
+    dexterity_modifier: DiceRollModifier,
+    constitution_modifier: DiceRollModifier,
     armor_class: i32,
 }
 
@@ -260,8 +264,45 @@ mod tests {
         assert_eq!(20, character.max_hit_points());
     }
 
+
     #[test]
-    fn a_character_has_plus_one_per_level_on_every_dice_roll() {
-        unimplemented!();
+    fn a_character_has_plus_one_per_level_on_every_even_dice_roll_0_modifier() {
+        let attacker = Character::default();
+        let attackee = Character::default();
+        let dice_roll: u32 = 15;
+
+        assert_eq!(1, attacker.level());
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+
+        assert_eq!(0, attack_command.level_modifier);
+    }
+
+    #[test]
+    fn a_character_has_plus_one_per_level_on_every_even_dice_roll_1_modifier() {
+        let mut attacker = Character::default();
+        attacker.experience_points = 1000;
+        let attackee = Character::default();
+        let dice_roll: u32 = 15;
+
+        assert_eq!(2, attacker.level());
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+
+        assert_eq!(1, attack_command.level_modifier);
+    }
+
+    #[test]
+    fn a_character_has_plus_one_per_level_on_every_even_dice_roll_2_modifier() {
+        let mut attacker = Character::default();
+        attacker.experience_points = 3000;
+        let attackee = Character::default();
+        let dice_roll: u32 = 15;
+
+        assert_eq!(4, attacker.level());
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+
+        assert_eq!(2, attack_command.level_modifier);
     }
 }
