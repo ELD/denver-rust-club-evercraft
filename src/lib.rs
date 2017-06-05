@@ -69,6 +69,12 @@ impl Character {
     }
 }
 
+impl Character {
+    fn fighter() -> Self {
+        Self::default()
+    }
+}
+
 impl Default for Character {
     fn default() -> Self {
         Self {
@@ -319,5 +325,19 @@ mod tests {
         };
 
         assert_eq!(true, attack_command.succeeds());
+    }
+
+    #[test]
+    fn as_a_player_i_can_be_a_fighter() {
+        let mut attacker = Character::fighter();
+        attacker.experience_points = 3000;
+        let attackee = Character::default();
+        let dice_roll: u32 = 15;
+
+        assert_eq!(4, attacker.level());
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+
+        assert_eq!(4, attack_command.level_modifier);
     }
 }
