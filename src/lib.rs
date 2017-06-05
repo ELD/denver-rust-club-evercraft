@@ -106,7 +106,8 @@ pub struct AttackCommand {
 
 impl AttackCommand {
     pub fn succeeds(&self) -> bool {
-        (self.dice_roll as i32 + self.strength_modifier) >= (self.dexterity_modifier + self.armor_class)
+        (self.dice_roll as i32 + self.strength_modifier + self.level_modifier)
+            >= (self.dexterity_modifier + self.armor_class)
     }
 
     pub fn is_critical(&self) -> bool {
@@ -304,5 +305,19 @@ mod tests {
         let attack_command = attacker.attack(&attackee, dice_roll);
 
         assert_eq!(2, attack_command.level_modifier);
+    }
+
+    #[test]
+    fn the_level_modifier_is_applied_to_attack_commands() {
+        let attack_command = AttackCommand{
+            level_modifier: 1,
+            dice_roll: 1,
+            strength_modifier: 0,
+            dexterity_modifier: 0,
+            constitution_modifier: 0,
+            armor_class: 2,
+        };
+
+        assert_eq!(true, attack_command.succeeds());
     }
 }
