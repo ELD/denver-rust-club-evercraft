@@ -78,3 +78,109 @@ impl Default for Character {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_defaults_to_10_ac_5_hp() {
+        let character = Character::default();
+
+        assert_eq!(10, character.armor_class);
+        assert_eq!(0, character.damage);
+    }
+
+    #[test]
+    fn a_player_is_dead_if_hitpoints_are_zero() {
+        let mut dead_player = Character::default();
+
+        dead_player.damage = 10;
+
+        assert!(dead_player.is_dead());
+    }
+
+    #[test]
+    fn a_character_can_have_a_level() {
+        let mut character = Character::default();
+
+        assert_eq!(1, character.level());
+
+        character.experience_points = 1000;
+
+        assert_eq!(2, character.level());
+
+        character.experience_points = 2000;
+
+        assert_eq!(3, character.level());
+    }
+
+    #[test]
+    fn a_character_has_increased_max_hit_points_based_on_level() {
+        let mut character = Character::default();
+        
+        assert_eq!(10, character.max_hit_points());
+
+        character.experience_points = 1000;
+        assert_eq!(15, character.max_hit_points());
+
+        character.experience_points = 2000;
+        assert_eq!(20, character.max_hit_points());
+    }
+
+
+    #[test]
+    fn a_character_has_plus_one_per_level_on_every_even_dice_roll_0_modifier() {
+        let attacker = Character::default();
+        let attackee = Character::default();
+        let dice_roll: u32 = 15;
+
+        assert_eq!(1, attacker.level());
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+
+        assert_eq!(0, attack_command.level_modifier);
+    }
+
+    #[test]
+    fn a_character_has_plus_one_per_level_on_every_even_dice_roll_1_modifier() {
+        let mut attacker = Character::default();
+        attacker.experience_points = 1000;
+        let attackee = Character::default();
+        let dice_roll: u32 = 15;
+
+        assert_eq!(2, attacker.level());
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+
+        assert_eq!(1, attack_command.level_modifier);
+    }
+
+    #[test]
+    fn a_character_has_plus_one_per_level_on_every_even_dice_roll_2_modifier() {
+        let mut attacker = Character::default();
+        attacker.experience_points = 3000;
+        let attackee = Character::default();
+        let dice_roll: u32 = 15;
+
+        assert_eq!(4, attacker.level());
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+
+        assert_eq!(2, attack_command.level_modifier);
+    }
+
+    #[test]
+    fn as_a_player_i_can_be_a_fighter() {
+        let mut attacker = Character::fighter();
+        attacker.experience_points = 3000;
+        let attackee = Character::default();
+        let dice_roll: u32 = 15;
+
+        assert_eq!(4, attacker.level());
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+
+        assert_eq!(4, attack_command.level_modifier);
+    }
+}

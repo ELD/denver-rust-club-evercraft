@@ -56,3 +56,109 @@ impl Character {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_player_can_successfully_attack_another_player() {
+        let attacker = Character::default();
+        let attackee = Character::default();
+        let dice_roll: u32 = 10;
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+        assert_eq!(Some(1), attack_command.damage());
+    }
+
+    #[test]
+    fn a_player_can_unsuccessfully_attack_another_player() {
+        let attacker = Character::default();
+        let attackee = Character::default();
+        let dice_roll: u32 = 9;
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+        assert_eq!(None, attack_command.damage());
+    }
+
+    #[test]
+    fn a_player_can_critically_hit_in_a_successful_attack() {
+        let attacker = Character::default();
+        let attackee = Character::default();
+        let dice_roll: u32 = 20;
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+        assert_eq!(Some(1), attack_command.damage());
+    }
+
+    #[test]
+    fn a_weak_character_can_still_do_damage() {
+        let mut attacker = Character::default();
+        attacker.strength = 6;
+        let attackee = Character::default();
+        let dice_roll = 12;
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+        assert_eq!(Some(1), attack_command.damage());
+    }
+
+    #[test]
+    fn a_swole_character_does_more_damage() {
+        let mut attacker = Character::default();
+        attacker.strength = 15;
+        let attackee = Character::default();
+        let dice_roll = 12;
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+        assert_eq!(Some(3), attack_command.damage());
+    }
+
+    #[test]
+    fn a_weak_character_does_modest_damage_in_a_critical_hit() {
+        let mut attacker = Character::default();
+        attacker.strength = 6;
+        let attackee = Character::default();
+        let dice_roll = 20;
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+        assert_eq!(Some(1), attack_command.damage());
+    }
+
+    #[test]
+    fn a_players_damage_is_increased_when_damage_is_done() {
+        let mut attacker = Character::default();
+        let mut attackee = Character::default();
+        let dice_roll: u32 = 15;
+        let expected_damage = attackee.damage + 1;
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+        resolve_combat(&attack_command, &mut attacker, &mut attackee);
+        assert_eq!(expected_damage, attackee.damage);
+    }
+
+    #[test]
+    fn a_character_gains_experience_for_a_successful_attack() {
+        let mut attacker = Character::default();
+        let mut attackee = Character::default();
+        let dice_roll: u32 = 15;
+
+        assert_eq!(0, attacker.experience_points);
+
+        resolve_combat(&attacker.attack(&attackee, dice_roll), &mut attacker, &mut attackee);
+        assert_eq!(10, attacker.experience_points);
+    }
+
+    #[test]
+    fn the_level_modifier_is_applied_to_attack_commands() {
+        let attack_command = AttackCommand {
+            level_modifier: 1,
+            dice_roll: 1,
+            strength_modifier: 0,
+            dexterity_modifier: 0,
+            constitution_modifier: 0,
+            armor_class: 2,
+        };
+
+        assert_eq!(true, attack_command.succeeds());
+    }
+}
