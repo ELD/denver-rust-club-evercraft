@@ -170,20 +170,6 @@ mod tests {
     }
 
     #[test]
-    fn as_a_fighter_my_attack_roll_is_increased_by_one_for_every_level() {
-        let mut attacker = Character::new(Class::Fighter);
-        attacker.experience_points = 3000;
-        let attackee = Character::new(Class::Commoner);
-        let dice_roll: u32 = 15;
-
-        assert_eq!(4, attacker.level());
-
-        let attack_command = attacker.attack(&attackee, dice_roll);
-
-        assert_eq!(4, attack_command.level_modifier);
-    }
-
-    #[test]
     fn as_a_fighter_i_have_10_hp_per_level_instead_of_five() {
         let mut character = Character::new(Class::Fighter);
         character.experience_points = 3000;
