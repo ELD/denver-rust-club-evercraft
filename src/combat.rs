@@ -1,6 +1,6 @@
 use std::cmp;
 
-use character::Character;
+use character::{Character, Class};
 
 pub fn resolve_combat(command: &AttackCommand, attacker: &mut Character, attackee: &mut Character) {
     attackee.damage += command.damage().unwrap_or(0) as u32;
@@ -48,11 +48,18 @@ impl Character {
     pub fn attack(&self, attackee: &Character, dice_roll: u32) -> AttackCommand {
         AttackCommand {
             dice_roll,
-            level_modifier: (self.level() / 2) as DiceRollModifier,
+            level_modifier: self.level_modifier(),
             strength_modifier: Self::modifier_score(self.strength),
             dexterity_modifier: Self::modifier_score(attackee.dexterity),
             constitution_modifier: Self::modifier_score(attackee.constitution),
             armor_class: attackee.armor_class,
+        }
+    }
+
+    fn level_modifier(&self) -> DiceRollModifier {
+        match self.class {
+            Class::Fighter => self.level() as DiceRollModifier,
+            _ => (self.level() / 2) as DiceRollModifier
         }
     }
 }
@@ -63,8 +70,8 @@ mod tests {
 
     #[test]
     fn a_player_can_successfully_attack_another_player() {
-        let attacker = Character::default();
-        let attackee = Character::default();
+        let attacker = Character::new(Class::Commoner);
+        let attackee = Character::new(Class::Commoner);
         let dice_roll: u32 = 10;
 
         let attack_command = attacker.attack(&attackee, dice_roll);
@@ -73,8 +80,8 @@ mod tests {
 
     #[test]
     fn a_player_can_unsuccessfully_attack_another_player() {
-        let attacker = Character::default();
-        let attackee = Character::default();
+        let attacker = Character::new(Class::Commoner);
+        let attackee = Character::new(Class::Commoner);
         let dice_roll: u32 = 9;
 
         let attack_command = attacker.attack(&attackee, dice_roll);
@@ -83,8 +90,8 @@ mod tests {
 
     #[test]
     fn a_player_can_critically_hit_in_a_successful_attack() {
-        let attacker = Character::default();
-        let attackee = Character::default();
+        let attacker = Character::new(Class::Commoner);
+        let attackee = Character::new(Class::Commoner);
         let dice_roll: u32 = 20;
 
         let attack_command = attacker.attack(&attackee, dice_roll);
@@ -93,9 +100,9 @@ mod tests {
 
     #[test]
     fn a_weak_character_can_still_do_damage() {
-        let mut attacker = Character::default();
+        let mut attacker = Character::new(Class::Commoner);
         attacker.strength = 6;
-        let attackee = Character::default();
+        let attackee = Character::new(Class::Commoner);
         let dice_roll = 12;
 
         let attack_command = attacker.attack(&attackee, dice_roll);
@@ -104,9 +111,9 @@ mod tests {
 
     #[test]
     fn a_swole_character_does_more_damage() {
-        let mut attacker = Character::default();
+        let mut attacker = Character::new(Class::Commoner);
         attacker.strength = 15;
-        let attackee = Character::default();
+        let attackee = Character::new(Class::Commoner);
         let dice_roll = 12;
 
         let attack_command = attacker.attack(&attackee, dice_roll);
@@ -115,9 +122,9 @@ mod tests {
 
     #[test]
     fn a_weak_character_does_modest_damage_in_a_critical_hit() {
-        let mut attacker = Character::default();
+        let mut attacker = Character::new(Class::Commoner);
         attacker.strength = 6;
-        let attackee = Character::default();
+        let attackee = Character::new(Class::Commoner);
         let dice_roll = 20;
 
         let attack_command = attacker.attack(&attackee, dice_roll);
@@ -126,8 +133,8 @@ mod tests {
 
     #[test]
     fn a_players_damage_is_increased_when_damage_is_done() {
-        let mut attacker = Character::default();
-        let mut attackee = Character::default();
+        let mut attacker = Character::new(Class::Commoner);
+        let mut attackee = Character::new(Class::Commoner);
         let dice_roll: u32 = 15;
         let expected_damage = attackee.damage + 1;
 
@@ -138,8 +145,8 @@ mod tests {
 
     #[test]
     fn a_character_gains_experience_for_a_successful_attack() {
-        let mut attacker = Character::default();
-        let mut attackee = Character::default();
+        let mut attacker = Character::new(Class::Commoner);
+        let mut attackee = Character::new(Class::Commoner);
         let dice_roll: u32 = 15;
 
         assert_eq!(0, attacker.experience_points);

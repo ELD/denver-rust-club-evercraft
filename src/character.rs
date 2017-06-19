@@ -1,3 +1,8 @@
+pub enum Class {
+    Fighter,
+    Commoner
+}
+
 pub enum Alignment {
     Good,
     Neutral,
@@ -12,6 +17,7 @@ impl Default for Alignment {
 
 pub struct Character {
     pub name: String,
+    pub class: Class,
     pub alignment: Alignment,
     pub armor_class: i32,
     pub damage: u32,
@@ -25,15 +31,26 @@ pub struct Character {
 }
 
 impl Character {
-    pub fn fighter() -> Self {
-            Self::default()
+    pub fn new(class: Class) -> Self {
+        Self {
+            name: String::new(),
+            class: class,
+            alignment: Alignment::default(),
+            armor_class: 10,
+            damage: 0,
+            strength: 10,
+            dexterity: 10,
+            constitution: 10,
+            wisdom: 10,
+            intelligence: 10,
+            charisma: 10,
+            experience_points: 0,
+        }
     }
 
     pub fn max_hit_points(&self) -> u32 {
         10 + ((self.level() as i32 - 1) * 5) as u32
     }
-
-    
 
     pub fn is_dead(&self) -> bool {
         self.damage >= self.max_hit_points()
@@ -61,31 +78,13 @@ impl Character {
     }
 }
 
-impl Default for Character {
-    fn default() -> Self {
-        Self {
-            name: String::new(),
-            alignment: Alignment::default(),
-            armor_class: 10,
-            damage: 0,
-            strength: 10,
-            dexterity: 10,
-            constitution: 10,
-            wisdom: 10,
-            intelligence: 10,
-            charisma: 10,
-            experience_points: 0,
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn it_defaults_to_10_ac_5_hp() {
-        let character = Character::default();
+        let character = Character::new(Class::Commoner);
 
         assert_eq!(10, character.armor_class);
         assert_eq!(0, character.damage);
@@ -93,7 +92,7 @@ mod tests {
 
     #[test]
     fn a_player_is_dead_if_hitpoints_are_zero() {
-        let mut dead_player = Character::default();
+        let mut dead_player = Character::new(Class::Commoner);
 
         dead_player.damage = 10;
 
@@ -102,7 +101,7 @@ mod tests {
 
     #[test]
     fn a_character_can_have_a_level() {
-        let mut character = Character::default();
+        let mut character = Character::new(Class::Commoner);
 
         assert_eq!(1, character.level());
 
@@ -117,7 +116,7 @@ mod tests {
 
     #[test]
     fn a_character_has_increased_max_hit_points_based_on_level() {
-        let mut character = Character::default();
+        let mut character = Character::new(Class::Commoner);
         
         assert_eq!(10, character.max_hit_points());
 
@@ -131,8 +130,8 @@ mod tests {
 
     #[test]
     fn a_character_has_plus_one_per_level_on_every_even_dice_roll_0_modifier() {
-        let attacker = Character::default();
-        let attackee = Character::default();
+        let attacker = Character::new(Class::Commoner);
+        let attackee = Character::new(Class::Commoner);
         let dice_roll: u32 = 15;
 
         assert_eq!(1, attacker.level());
@@ -144,9 +143,9 @@ mod tests {
 
     #[test]
     fn a_character_has_plus_one_per_level_on_every_even_dice_roll_1_modifier() {
-        let mut attacker = Character::default();
+        let mut attacker = Character::new(Class::Commoner);
         attacker.experience_points = 1000;
-        let attackee = Character::default();
+        let attackee = Character::new(Class::Commoner);
         let dice_roll: u32 = 15;
 
         assert_eq!(2, attacker.level());
@@ -158,9 +157,9 @@ mod tests {
 
     #[test]
     fn a_character_has_plus_one_per_level_on_every_even_dice_roll_2_modifier() {
-        let mut attacker = Character::default();
+        let mut attacker = Character::new(Class::Commoner);
         attacker.experience_points = 3000;
-        let attackee = Character::default();
+        let attackee = Character::new(Class::Commoner);
         let dice_roll: u32 = 15;
 
         assert_eq!(4, attacker.level());
@@ -171,10 +170,10 @@ mod tests {
     }
 
     #[test]
-    fn as_a_player_i_can_be_a_fighter() {
-        let mut attacker = Character::fighter();
+    fn as_a_fighter_my_attack_roll_is_increased_by_one_for_every_level() {
+        let mut attacker = Character::new(Class::Fighter);
         attacker.experience_points = 3000;
-        let attackee = Character::default();
+        let attackee = Character::new(Class::Commoner);
         let dice_roll: u32 = 15;
 
         assert_eq!(4, attacker.level());
@@ -182,5 +181,13 @@ mod tests {
         let attack_command = attacker.attack(&attackee, dice_roll);
 
         assert_eq!(4, attack_command.level_modifier);
+    }
+
+    #[test]
+    fn as_a_fighter_i_have_10_hp_per_level_instead_of_five() {
+        let mut character = Character::new(Class::Fighter);
+        character.experience_points = 3000;
+
+        assert_eq!(40, character.max_hit_points());
     }
 }
