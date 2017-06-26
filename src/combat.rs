@@ -9,7 +9,7 @@ pub fn resolve_combat(command: &AttackCommand, attacker: &mut Character, attacke
 
 pub type DiceRollModifier = i32;
 
-#[derive(Debug, Default, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct AttackCommand {
     pub dice_roll: u32,
     pub strength_modifier: DiceRollModifier,
@@ -17,12 +17,17 @@ pub struct AttackCommand {
     pub dexterity_modifier: DiceRollModifier,
     pub constitution_modifier: DiceRollModifier,
     pub armor_class: i32,
+    pub attacker_class: Class,
 }
 
 impl AttackCommand {
     pub fn succeeds(&self) -> bool {
+        let dexterity_modifier = match self.attacker_class {
+            Class::Rogue => cmp::min(self.dexterity_modifier, 0),
+            _ => self.dexterity_modifier,
+        };
         (self.dice_roll as i32 + self.strength_modifier + self.level_modifier)
-            >= (self.dexterity_modifier + self.armor_class)
+            >= (dexterity_modifier + self.armor_class)
     }
 
     pub fn is_critical(&self) -> bool {
@@ -33,7 +38,11 @@ impl AttackCommand {
         if !self.succeeds() {
             None
         } else if self.is_critical() {
-            Some(cmp::max((2 * self.strength_modifier + 1), 1))
+            let critical_hit_multiplier = match self.attacker_class {
+                Class::Rogue => 3,
+                _ => 2,
+            };
+            Some(cmp::max((critical_hit_multiplier * self.strength_modifier + 1), 1))
         } else {
             Some(cmp::max((1 + self.strength_modifier), 1))
         }
@@ -53,6 +62,7 @@ impl Character {
             dexterity_modifier: Self::modifier_score(attackee.dexterity),
             constitution_modifier: Self::modifier_score(attackee.constitution),
             armor_class: attackee.armor_class,
+            attacker_class: self.class,
         }
     }
 
@@ -90,12 +100,13 @@ mod tests {
 
     #[test]
     fn a_player_can_critically_hit_in_a_successful_attack() {
-        let attacker = Character::new(Class::Commoner);
+        let mut attacker = Character::new(Class::Commoner);
+        attacker.strength = 15;
         let attackee = Character::new(Class::Commoner);
         let dice_roll: u32 = 20;
 
         let attack_command = attacker.attack(&attackee, dice_roll);
-        assert_eq!(Some(1), attack_command.damage());
+        assert_eq!(Some(5), attack_command.damage());
     }
 
     #[test]
@@ -164,6 +175,7 @@ mod tests {
             dexterity_modifier: 0,
             constitution_modifier: 0,
             armor_class: 2,
+            attacker_class: Class::Commoner,
         };
 
         assert_eq!(true, attack_command.succeeds());
@@ -181,5 +193,43 @@ mod tests {
         let attack_command = attacker.attack(&attackee, dice_roll);
 
         assert_eq!(4, attack_command.level_modifier);
+    }
+
+    #[test]
+    fn as_a_rogue_a_critical_hit_does_triple_damage() {
+        let mut attacker = Character::new(Class::Rogue);
+        attacker.strength = 12;
+        let attackee = Character::new(Class::Commoner);
+        let dice_roll: u32 = 20;
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+        assert_eq!(Some(4), attack_command.damage());
+    }
+
+    #[test]
+    fn as_a_rogue_ignores_a_positive_dexterity_modifier() {
+        // TODO: directly setup the attack command
+        let attacker = Character::new(Class::Rogue);
+        let mut attackee = Character::new(Class::Commoner);
+        attackee.armor_class = 10;
+        attackee.dexterity = 12;
+        let dice_roll: u32 = 10;
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+        assert_eq!(true, attack_command.succeeds());
+    }
+
+    #[test]
+    fn as_a_rogue_does_not_ignore_a_negative_dexterity_modifier() {
+        // TODO: directly setup the attack command
+        let attacker = Character::new(Class::Rogue);
+        let mut attackee = Character::new(Class::Commoner);
+        attackee.armor_class = 11;
+        attackee.dexterity = 8;
+        let dice_roll: u32 = 10;
+        
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+        assert_eq!(false, attack_command.succeeds());
     }
 }

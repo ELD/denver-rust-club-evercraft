@@ -1,6 +1,8 @@
+#[derive(Debug,PartialEq, Eq, Clone, Copy)]
 pub enum Class {
     Fighter,
-    Commoner
+    Rogue,
+    Commoner,
 }
 
 pub enum Alignment {
@@ -49,7 +51,12 @@ impl Character {
     }
 
     pub fn max_hit_points(&self) -> u32 {
-        10 + ((self.level() as i32 - 1) * 5) as u32
+        let hit_points_per_level = match self.class {
+            Class::Fighter => 10,
+            _ => 5,
+        };
+        
+        10 + ((self.level() as i32 - 1) * hit_points_per_level) as u32
     }
 
     pub fn is_dead(&self) -> bool {
