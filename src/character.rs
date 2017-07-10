@@ -2,6 +2,7 @@
 pub enum Class {
     Fighter,
     Rogue,
+    Monk,
     Commoner,
 }
 
@@ -53,6 +54,7 @@ impl Character {
     pub fn max_hit_points(&self) -> u32 {
         let hit_points_per_level = match self.class {
             Class::Fighter => 10,
+            Class::Monk => 6,
             _ => 5,
         };
         
@@ -182,5 +184,18 @@ mod tests {
         character.experience_points = 3000;
 
         assert_eq!(40, character.max_hit_points());
+    }
+
+    #[test]
+    fn a_war_monk_has_six_hitpoints_per_level() {
+        let mut monk = Character::new(Class::Monk);
+
+        assert_eq!(10, monk.max_hit_points());
+
+        monk.experience_points = 1000;
+        assert_eq!(16, monk.max_hit_points());
+
+        monk.experience_points = 2000;
+        assert_eq!(22, monk.max_hit_points());
     }
 }

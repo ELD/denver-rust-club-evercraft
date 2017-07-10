@@ -12,22 +12,19 @@ pub type DiceRollModifier = i32;
 #[derive(Debug, PartialEq, Eq)]
 pub struct AttackCommand {
     pub dice_roll: u32,
-    pub strength_modifier: DiceRollModifier,
+    pub attack_modifier: DiceRollModifier,
     pub level_modifier: DiceRollModifier,
     pub dexterity_modifier: DiceRollModifier,
     pub constitution_modifier: DiceRollModifier,
     pub armor_class: i32,
     pub attacker_class: Class,
+    pub minimum_damage: i32,
 }
 
 impl AttackCommand {
     pub fn succeeds(&self) -> bool {
-        let dexterity_modifier = match self.attacker_class {
-            Class::Rogue => cmp::min(self.dexterity_modifier, 0),
-            _ => self.dexterity_modifier,
-        };
-        (self.dice_roll as i32 + self.strength_modifier + self.level_modifier)
-            >= (dexterity_modifier + self.armor_class)
+        (self.dice_roll as i32 + self.attack_modifier + self.level_modifier)
+            >= (self.dexterity_modifier + self.armor_class)
     }
 
     pub fn is_critical(&self) -> bool {
@@ -42,9 +39,9 @@ impl AttackCommand {
                 Class::Rogue => 3,
                 _ => 2,
             };
-            Some(cmp::max((critical_hit_multiplier * self.strength_modifier + 1), 1))
+            Some(cmp::max((critical_hit_multiplier * self.attack_modifier + 1), self.minimum_damage))
         } else {
-            Some(cmp::max((1 + self.strength_modifier), 1))
+            Some(cmp::max((1 + self.attack_modifier), self.minimum_damage))
         }
     }
 
@@ -55,14 +52,30 @@ impl AttackCommand {
 
 impl Character {
     pub fn attack(&self, attackee: &Character, dice_roll: u32) -> AttackCommand {
+        let attackee_dexterity_modifier = match self.class {
+            Class::Rogue => cmp::min(Self::modifier_score(attackee.dexterity), 0),
+            _ => Self::modifier_score(attackee.dexterity),
+        };
+
+        let attack_modifier_score = match self.class {
+            Class::Rogue => self.dexterity,
+            _ => self.strength,
+        };
+
+        let minimum_damage = match self.class {
+            Class::Monk => 3,
+            _ => 1,
+        };
+
         AttackCommand {
             dice_roll,
             level_modifier: self.level_modifier(),
-            strength_modifier: Self::modifier_score(self.strength),
-            dexterity_modifier: Self::modifier_score(attackee.dexterity),
+            attack_modifier: Self::modifier_score(attack_modifier_score),
+            dexterity_modifier: attackee_dexterity_modifier,
             constitution_modifier: Self::modifier_score(attackee.constitution),
             armor_class: attackee.armor_class,
             attacker_class: self.class,
+            minimum_damage,
         }
     }
 
@@ -171,11 +184,12 @@ mod tests {
         let attack_command = AttackCommand {
             level_modifier: 1,
             dice_roll: 1,
-            strength_modifier: 0,
+            attack_modifier: 0,
             dexterity_modifier: 0,
             constitution_modifier: 0,
             armor_class: 2,
             attacker_class: Class::Commoner,
+            minimum_damage: 1,
         };
 
         assert_eq!(true, attack_command.succeeds());
@@ -198,7 +212,7 @@ mod tests {
     #[test]
     fn as_a_rogue_a_critical_hit_does_triple_damage() {
         let mut attacker = Character::new(Class::Rogue);
-        attacker.strength = 12;
+        attacker.dexterity = 12;
         let attackee = Character::new(Class::Commoner);
         let dice_roll: u32 = 20;
 
@@ -227,9 +241,32 @@ mod tests {
         attackee.armor_class = 11;
         attackee.dexterity = 8;
         let dice_roll: u32 = 10;
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+        assert_eq!(true, attack_command.succeeds());
+    }
+
+    #[test]
+    fn as_a_rogue_adds_dexterity_modifier_to_attacks() {
+        // TODO: directly setup the attack command
+        let mut attacker = Character::new(Class::Rogue);
+        let attackee = Character::new(Class::Commoner);
+        attacker.dexterity = 12;
+        let dice_roll: u32 = 9;
         
 
         let attack_command = attacker.attack(&attackee, dice_roll);
-        assert_eq!(false, attack_command.succeeds());
+        assert_eq!(true, attack_command.succeeds());
+    }
+
+    #[test]
+    fn a_monk_does_at_least_three_points_of_damage_on_an_attack() {
+        let mut attacker = Character::new(Class::Monk);
+        attacker.strength = 6;
+        let attackee = Character::new(Class::Commoner);
+        let dice_roll = 20;
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+        assert_eq!(Some(3), attack_command.damage());
     }
 }
