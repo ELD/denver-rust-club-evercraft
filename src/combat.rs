@@ -14,7 +14,7 @@ pub struct AttackCommand {
     pub dice_roll: u32,
     pub attack_modifier: DiceRollModifier,
     pub level_modifier: DiceRollModifier,
-    pub dexterity_modifier: DiceRollModifier,
+    pub defense_dexterity_modifier: DiceRollModifier,
     pub constitution_modifier: DiceRollModifier,
     pub defense_wisdom_modifier: DiceRollModifier,
     pub armor_class: i32,
@@ -25,7 +25,7 @@ pub struct AttackCommand {
 impl AttackCommand {
     pub fn succeeds(&self) -> bool {
         (self.dice_roll as i32 + self.attack_modifier + self.level_modifier) >=
-            (self.dexterity_modifier + self.armor_class + self.defense_wisdom_modifier)
+            (self.defense_dexterity_modifier + self.armor_class + self.defense_wisdom_modifier)
     }
 
     pub fn is_critical(&self) -> bool {
@@ -52,7 +52,7 @@ impl AttackCommand {
 
 impl Character {
     pub fn attack(&self, attackee: &Character, dice_roll: u32) -> AttackCommand {
-        let attackee_dexterity_modifier = match self.class {
+        let attackee_defense_dexterity_modifier = match self.class {
             Class::Rogue => cmp::min(Self::modifier_score(attackee.dexterity), 0),
             _ => Self::modifier_score(attackee.dexterity),
         };
@@ -81,7 +81,7 @@ impl Character {
             dice_roll,
             level_modifier: self.level_modifier(),
             attack_modifier: Self::modifier_score(attack_modifier_score),
-            dexterity_modifier: attackee_dexterity_modifier,
+            defense_dexterity_modifier: attackee_defense_dexterity_modifier,
             constitution_modifier: Self::modifier_score(attackee.constitution),
             defense_wisdom_modifier,
             armor_class: attackee.armor_class,
@@ -200,7 +200,7 @@ mod tests {
             level_modifier: 1,
             dice_roll: 1,
             attack_modifier: 0,
-            dexterity_modifier: 0,
+            defense_dexterity_modifier: 0,
             constitution_modifier: 0,
             armor_class: 2,
             defense_wisdom_modifier: 0,
@@ -237,7 +237,7 @@ mod tests {
     }
 
     #[test]
-    fn as_a_rogue_ignores_a_positive_dexterity_modifier() {
+    fn as_a_rogue_ignores_a_positive_defense_dexterity_modifier() {
         // TODO: directly setup the attack command
         let attacker = Character::new(Class::Rogue);
         let mut attackee = Character::new(Class::Commoner);
@@ -250,7 +250,7 @@ mod tests {
     }
 
     #[test]
-    fn as_a_rogue_does_not_ignore_a_negative_dexterity_modifier() {
+    fn as_a_rogue_does_not_ignore_a_negative_defense_dexterity_modifier() {
         // TODO: directly setup the attack command
         let attacker = Character::new(Class::Rogue);
         let mut attackee = Character::new(Class::Commoner);
@@ -328,7 +328,7 @@ mod tests {
             level_modifier: 0,
             dice_roll: 10,
             attack_modifier: 0,
-            dexterity_modifier: 0,
+            defense_dexterity_modifier: 0,
             constitution_modifier: 0,
             armor_class: 0,
             defense_wisdom_modifier: 11,
