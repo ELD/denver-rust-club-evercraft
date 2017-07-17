@@ -296,8 +296,6 @@ mod tests {
         let attack_command = attacker.attack(&attackee, dice_roll);
 
         assert_eq!(attack_command.defense_wisdom_modifier, 3);
-        // TODO: Break out to separate test
-        assert_eq!(attack_command.succeeds(), false);
     }
 
     #[test]
@@ -322,5 +320,22 @@ mod tests {
         let attack_command = attacker.attack(&attackee, dice_roll);
 
         assert_eq!(attack_command.defense_wisdom_modifier, 0);
+    }
+
+    #[test]
+    fn defense_wisdom_modifier_is_applied_when_calculating_success() {
+        let attack_command = AttackCommand {
+            level_modifier: 0,
+            dice_roll: 10,
+            attack_modifier: 0,
+            dexterity_modifier: 0,
+            constitution_modifier: 0,
+            armor_class: 0,
+            defense_wisdom_modifier: 11,
+            critical_hit_multiplier: 0,
+            minimum_damage: 1,
+        };
+
+        assert_eq!(attack_command.succeeds(), false);
     }
 }
