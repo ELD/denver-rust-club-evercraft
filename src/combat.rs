@@ -16,6 +16,7 @@ pub struct AttackCommand {
     pub level_modifier: DiceRollModifier,
     pub dexterity_modifier: DiceRollModifier,
     pub constitution_modifier: DiceRollModifier,
+    pub defense_wisdom_modifier: DiceRollModifier,
     pub armor_class: i32,
     pub critical_hit_multiplier: i32,
     pub minimum_damage: i32,
@@ -23,8 +24,8 @@ pub struct AttackCommand {
 
 impl AttackCommand {
     pub fn succeeds(&self) -> bool {
-        (self.dice_roll as i32 + self.attack_modifier + self.level_modifier)
-            >= (self.dexterity_modifier + self.armor_class)
+        (self.dice_roll as i32 + self.attack_modifier + self.level_modifier) >=
+            (self.dexterity_modifier + self.armor_class + self.defense_wisdom_modifier)
     }
 
     pub fn is_critical(&self) -> bool {
@@ -35,7 +36,10 @@ impl AttackCommand {
         if !self.succeeds() {
             None
         } else if self.is_critical() {
-            Some(cmp::max((self.critical_hit_multiplier * self.attack_modifier + 1), self.minimum_damage))
+            Some(cmp::max(
+                (self.critical_hit_multiplier * self.attack_modifier + 1),
+                self.minimum_damage,
+            ))
         } else {
             Some(cmp::max((1 + self.attack_modifier), self.minimum_damage))
         }
@@ -68,12 +72,18 @@ impl Character {
             _ => 1,
         };
 
+        let defense_wisdom_modifier = match attackee.class {
+            Class::Monk => cmp::max(Self::modifier_score(attackee.wisdom), 0),
+            _ => 0,
+        };
+
         AttackCommand {
             dice_roll,
             level_modifier: self.level_modifier(),
             attack_modifier: Self::modifier_score(attack_modifier_score),
             dexterity_modifier: attackee_dexterity_modifier,
             constitution_modifier: Self::modifier_score(attackee.constitution),
+            defense_wisdom_modifier,
             armor_class: attackee.armor_class,
             critical_hit_multiplier,
             minimum_damage,
@@ -83,7 +93,7 @@ impl Character {
     fn level_modifier(&self) -> DiceRollModifier {
         match self.class {
             Class::Fighter => self.level() as DiceRollModifier,
-            _ => (self.level() / 2) as DiceRollModifier
+            _ => (self.level() / 2) as DiceRollModifier,
         }
     }
 }
@@ -176,7 +186,11 @@ mod tests {
 
         assert_eq!(0, attacker.experience_points);
 
-        resolve_combat(&attacker.attack(&attackee, dice_roll), &mut attacker, &mut attackee);
+        resolve_combat(
+            &attacker.attack(&attackee, dice_roll),
+            &mut attacker,
+            &mut attackee,
+        );
         assert_eq!(10, attacker.experience_points);
     }
 
@@ -189,6 +203,7 @@ mod tests {
             dexterity_modifier: 0,
             constitution_modifier: 0,
             armor_class: 2,
+            defense_wisdom_modifier: 0,
             critical_hit_multiplier: 2,
             minimum_damage: 1,
         };
@@ -254,7 +269,7 @@ mod tests {
         let attackee = Character::new(Class::Commoner);
         attacker.dexterity = 12;
         let dice_roll: u32 = 9;
-        
+
 
         let attack_command = attacker.attack(&attackee, dice_roll);
         assert_eq!(true, attack_command.succeeds());
@@ -272,7 +287,40 @@ mod tests {
     }
 
     #[test]
-    fn a_monk_adds_wisdom_modifier_and_dexterity_to_armor_class() {
-        assert!(false);
+    fn a_monk_adds_a_positive_defense_wisdom_modifier() {
+        let attacker = Character::new(Class::Commoner);
+        let mut attackee = Character::new(Class::Monk);
+        attackee.wisdom = 16;
+        let dice_roll = 12;
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+
+        assert_eq!(attack_command.defense_wisdom_modifier, 3);
+        // TODO: Break out to separate test
+        assert_eq!(attack_command.succeeds(), false);
+    }
+
+    #[test]
+    fn a_monk_does_not_add_a_negative_defense_wisdom_modifier() {
+        let attacker = Character::new(Class::Commoner);
+        let mut attackee = Character::new(Class::Monk);
+        attackee.wisdom = 6;
+        let dice_roll = 10;
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+
+        assert_eq!(attack_command.defense_wisdom_modifier, 0);
+    }
+
+    #[test]
+    fn anyone_other_than_a_monk_has_wisdom_modifier() {
+        let attacker = Character::new(Class::Commoner);
+        let mut attackee = Character::new(Class::Commoner);
+        attackee.wisdom = 16;
+        let dice_roll = 8;
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+
+        assert_eq!(attack_command.defense_wisdom_modifier, 0);
     }
 }
