@@ -338,4 +338,9 @@ mod tests {
 
         assert_eq!(attack_command.succeeds(), false);
     }
+
+    #[test]
+    fn as_a_monk_an_attack_roll_is_increased_by_1_every_2nd_and_3rd_level() {
+        assert!(false);
+    }
 }
