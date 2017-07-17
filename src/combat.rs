@@ -17,7 +17,7 @@ pub struct AttackCommand {
     pub dexterity_modifier: DiceRollModifier,
     pub constitution_modifier: DiceRollModifier,
     pub armor_class: i32,
-    pub attacker_class: Class,
+    pub critical_hit_multiplier: i32,
     pub minimum_damage: i32,
 }
 
@@ -35,11 +35,7 @@ impl AttackCommand {
         if !self.succeeds() {
             None
         } else if self.is_critical() {
-            let critical_hit_multiplier = match self.attacker_class {
-                Class::Rogue => 3,
-                _ => 2,
-            };
-            Some(cmp::max((critical_hit_multiplier * self.attack_modifier + 1), self.minimum_damage))
+            Some(cmp::max((self.critical_hit_multiplier * self.attack_modifier + 1), self.minimum_damage))
         } else {
             Some(cmp::max((1 + self.attack_modifier), self.minimum_damage))
         }
@@ -62,6 +58,11 @@ impl Character {
             _ => self.strength,
         };
 
+        let critical_hit_multiplier = match self.class {
+            Class::Rogue => 3,
+            _ => 2,
+        };
+
         let minimum_damage = match self.class {
             Class::Monk => 3,
             _ => 1,
@@ -74,7 +75,7 @@ impl Character {
             dexterity_modifier: attackee_dexterity_modifier,
             constitution_modifier: Self::modifier_score(attackee.constitution),
             armor_class: attackee.armor_class,
-            attacker_class: self.class,
+            critical_hit_multiplier,
             minimum_damage,
         }
     }
@@ -188,7 +189,7 @@ mod tests {
             dexterity_modifier: 0,
             constitution_modifier: 0,
             armor_class: 2,
-            attacker_class: Class::Commoner,
+            critical_hit_multiplier: 2,
             minimum_damage: 1,
         };
 
@@ -268,5 +269,10 @@ mod tests {
 
         let attack_command = attacker.attack(&attackee, dice_roll);
         assert_eq!(Some(3), attack_command.damage());
+    }
+
+    #[test]
+    fn a_monk_adds_wisdom_modifier_and_dexterity_to_armor_class() {
+        assert!(false);
     }
 }
