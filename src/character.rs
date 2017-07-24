@@ -3,9 +3,11 @@ pub enum Class {
     Fighter,
     Rogue,
     Monk,
+    Paladin,
     Commoner,
 }
 
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub enum Alignment {
     Good,
     Neutral,
@@ -55,6 +57,7 @@ impl Character {
         let hit_points_per_level = match self.class {
             Class::Fighter => 10,
             Class::Monk => 6,
+            Class::Paladin => 8,
             _ => 5,
         };
 
@@ -197,5 +200,18 @@ mod tests {
 
         monk.experience_points = 2000;
         assert_eq!(22, monk.max_hit_points());
+    }
+
+    #[test]
+    fn a_paladin_has_eight_hitpoints_per_level() {
+        let mut paladin = Character::new(Class::Paladin);
+
+        assert_eq!(10, paladin.max_hit_points());
+
+        paladin.experience_points = 1000;
+        assert_eq!(18, paladin.max_hit_points());
+
+        paladin.experience_points = 2000;
+        assert_eq!(26, paladin.max_hit_points());
     }
 }
