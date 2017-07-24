@@ -1,4 +1,4 @@
-#[derive(Debug,PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Class {
     Fighter,
     Rogue,
@@ -57,7 +57,7 @@ impl Character {
             Class::Monk => 6,
             _ => 5,
         };
-        
+
         10 + ((self.level() as i32 - 1) * hit_points_per_level) as u32
     }
 
@@ -126,7 +126,7 @@ mod tests {
     #[test]
     fn a_character_has_increased_max_hit_points_based_on_level() {
         let mut character = Character::new(Class::Commoner);
-        
+
         assert_eq!(10, character.max_hit_points());
 
         character.experience_points = 1000;
