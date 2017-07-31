@@ -20,10 +20,23 @@ impl Default for Alignment {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum Race {
+    Human,
+    Orc,
+}
+
+impl Default for Race {
+    fn default() -> Self {
+        Race::Human
+    }
+}
+
 pub struct Character {
     pub name: String,
     pub class: Class,
     pub alignment: Alignment,
+    pub race: Race,
     pub armor_class: i32,
     pub damage: u32,
     pub strength: u32,
@@ -35,12 +48,30 @@ pub struct Character {
     pub experience_points: u64,
 }
 
+fn modifier_score(score: u32) -> i32 {
+    match score {
+        1 => -5,
+        2 | 3 => -4,
+        4 | 5 => -3,
+        6 | 7 => -2,
+        8 | 9 => -1,
+        10 | 11 => 0,
+        12 | 13 => 1,
+        14 | 15 => 2,
+        16 | 17 => 3,
+        18 | 19 => 4,
+        20 => 5,
+        _ => 0,
+    }
+}
+
 impl Character {
     pub fn new(class: Class) -> Self {
         Self {
             name: String::new(),
             class: class,
             alignment: Alignment::default(),
+            race: Race::default(),
             armor_class: 10,
             damage: 0,
             strength: 10,
@@ -68,25 +99,44 @@ impl Character {
         self.damage >= self.max_hit_points()
     }
 
-    pub fn modifier_score(score: u32) -> i32 {
-        match score {
-            1 => -5,
-            2 | 3 => -4,
-            4 | 5 => -3,
-            6 | 7 => -2,
-            8 | 9 => -1,
-            10 | 11 => 0,
-            12 | 13 => 1,
-            14 | 15 => 2,
-            16 | 17 => 3,
-            18 | 19 => 4,
-            20 => 5,
+    pub fn level(&self) -> u64 {
+        1 + (self.experience_points / 1000)
+    }
+
+    pub fn strength_modifier(&self) -> i32 {
+        modifier_score(self.strength) + match self.race {
+            Race::Orc => 2,
             _ => 0,
         }
     }
 
-    pub fn level(&self) -> u64 {
-        1 + (self.experience_points / 1000)
+    pub fn intelligence_modifier(&self) -> i32 {
+        modifier_score(self.intelligence) + match self.race {
+            Race::Orc => -1,
+            _ => 0,
+        }
+    }
+
+    pub fn wisdom_modifier(&self) -> i32 {
+        modifier_score(self.wisdom) + match self.race {
+            Race::Orc => -1,
+            _ => 0,
+        }
+    }
+
+    pub fn charisma_modifier(&self) -> i32 {
+        modifier_score(self.charisma) + match self.race {
+            Race::Orc => -1,
+            _ => 0,
+        }
+    }
+
+    pub fn dexterity_modifier(&self) -> i32 {
+        modifier_score(self.dexterity)
+    }
+
+    pub fn constitution_modifier(&self) -> i32 {
+        modifier_score(self.constitution)
     }
 }
 
@@ -213,5 +263,15 @@ mod tests {
 
         paladin.experience_points = 2000;
         assert_eq!(26, paladin.max_hit_points());
+    }
+
+
+    #[test]
+    fn as_an_orc_my_armor_class_is_two_better() {
+        let mut orc = Character::new(Class::Commoner);
+        orc.race = Race::Orc;
+        orc.base_armor_class = 0;
+        
+        assert_eq!(orc.armor_class(), 2);
     }
 }

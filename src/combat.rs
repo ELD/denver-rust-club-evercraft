@@ -55,13 +55,13 @@ impl AttackCommand {
 impl Character {
     pub fn attack(&self, attackee: &Character, dice_roll: u32) -> AttackCommand {
         let attackee_defense_dexterity_modifier = match self.class {
-            Class::Rogue => cmp::min(Self::modifier_score(attackee.dexterity), 0),
-            _ => Self::modifier_score(attackee.dexterity),
+            Class::Rogue => cmp::min(attackee.dexterity_modifier(), 0),
+            _ => attackee.dexterity_modifier(),
         };
 
-        let attack_modifier_score = match self.class {
-            Class::Rogue => self.dexterity,
-            _ => self.strength,
+        let attack_modifier = match self.class {
+            Class::Rogue => self.dexterity_modifier(),
+            _ => self.strength_modifier(),
         };
 
         let critical_hit_multiplier = match self.class {
@@ -76,7 +76,7 @@ impl Character {
         };
 
         let defense_wisdom_modifier = match attackee.class {
-            Class::Monk => cmp::max(Self::modifier_score(attackee.wisdom), 0),
+            Class::Monk => cmp::max(attackee.wisdom_modifier(), 0),
             _ => 0,
         };
 
@@ -90,9 +90,9 @@ impl Character {
         AttackCommand {
             dice_roll,
             level_modifier: self.level_modifier(),
-            attack_modifier: Self::modifier_score(attack_modifier_score),
+            attack_modifier: attack_modifier,
             defense_dexterity_modifier: attackee_defense_dexterity_modifier,
-            constitution_modifier: Self::modifier_score(attackee.constitution),
+            constitution_modifier: attackee.constitution_modifier(),
             defense_wisdom_modifier,
             armor_class: attackee.armor_class,
             critical_hit_multiplier,
@@ -431,7 +431,7 @@ mod tests {
         assert_eq!(attack_command.damage(), Some(1));
     }
 
-        #[test]
+    #[test]
     fn as_a_paladin_my_attack_roll_is_increased_by_one_for_every_level() {
         let mut attacker = Character::new(Class::Paladin);
         attacker.experience_points = 3000;
