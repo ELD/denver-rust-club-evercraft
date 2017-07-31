@@ -34,15 +34,16 @@ impl AttackCommand {
     }
 
     pub fn damage(&self) -> Option<i32> {
+        let additional_dmg = self.attack_modifier + self.alignment_damage_modifier;
         if !self.succeeds() {
             None
         } else if self.is_critical() {
             Some(cmp::max(
-                (self.critical_hit_multiplier * self.attack_modifier + 1),
+                (self.critical_hit_multiplier * additional_dmg + 1),
                 self.minimum_damage,
             ))
         } else {
-            Some(cmp::max((1 + self.attack_modifier), self.minimum_damage))
+            Some(cmp::max((1 + additional_dmg), self.minimum_damage))
         }
     }
 
@@ -65,6 +66,7 @@ impl Character {
 
         let critical_hit_multiplier = match self.class {
             Class::Rogue => 3,
+            Class::Paladin if attackee.alignment == Alignment::Evil => 3,
             _ => 2,
         };
 
@@ -101,7 +103,7 @@ impl Character {
 
     fn level_modifier(&self) -> DiceRollModifier {
         match self.class {
-            Class::Fighter => self.level() as DiceRollModifier,
+            Class::Fighter | Class::Paladin => self.level() as DiceRollModifier,
             Class::Monk => (self.level() * 2 / 3) as DiceRollModifier,
             _ => (self.level() / 2) as DiceRollModifier,
         }
@@ -407,5 +409,39 @@ mod tests {
         let attack_command = attacker.attack(&attackee, 10);
         assert_eq!(attack_command.alignment_damage_modifier, 0);
         assert_eq!(attack_command.damage(), Some(1));
+    }
+
+    #[test]
+    fn a_paladin_does_6_extra_damage_on_critical_hit_to_evil_characters() {
+        let attacker = Character::new(Class::Paladin);
+        let mut attackee = Character::new(Class::Commoner);
+        attackee.alignment = Alignment::Evil;
+
+        let attack_command = attacker.attack(&attackee, 20);
+        assert_eq!(attack_command.alignment_damage_modifier, 2);
+        assert_eq!(attack_command.critical_hit_multiplier, 3);
+        assert_eq!(attack_command.damage(), Some(7));
+
+        let mut attackee = Character::new(Class::Commoner);
+        attackee.alignment = Alignment::Good;
+
+        let attack_command = attacker.attack(&attackee, 20);
+        assert_eq!(attack_command.alignment_damage_modifier, 0);
+        assert_eq!(attack_command.critical_hit_multiplier, 2);
+        assert_eq!(attack_command.damage(), Some(1));
+    }
+
+        #[test]
+    fn as_a_paladin_my_attack_roll_is_increased_by_one_for_every_level() {
+        let mut attacker = Character::new(Class::Paladin);
+        attacker.experience_points = 3000;
+        let attackee = Character::new(Class::Commoner);
+        let dice_roll: u32 = 15;
+
+        assert_eq!(4, attacker.level());
+
+        let attack_command = attacker.attack(&attackee, dice_roll);
+
+        assert_eq!(4, attack_command.level_modifier);
     }
 }
